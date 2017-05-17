@@ -4,6 +4,7 @@
  * @file
  * Install, update and uninstall functions for the adminrole module.
  */
+
 use Drupal\user\Entity\Role;
 
 /**
@@ -11,9 +12,9 @@ use Drupal\user\Entity\Role;
  */
 function adminrole_install() {
 
-  $role =  Role::load('administrator');
-  if(!$role) {
-    $role = Role::create(array('id' => 'administrator', 'label' => 'Administrator'));
+  $role = Role::load('administrator');
+  if (!$role) {
+    $role = Role::create(['id' => 'administrator', 'label' => 'Administrator']);
     $role->save();
     \Drupal::configFactory()->getEditable('adminrole.settings')
       ->set('user_admin_role', 'administrator')
@@ -30,4 +31,3 @@ function adminrole_install() {
 function adminrole_uninstall() {
   \Drupal::configFactory()->getEditable('adminrole.settings')->clear('user_admin_role')->save();
 }
-

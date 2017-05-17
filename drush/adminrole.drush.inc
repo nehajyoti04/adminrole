@@ -9,11 +9,11 @@
  * Implements hook_drush_command().
  */
 function adminrole_drush_command() {
-  $items['adminrole-update'] = array(
+  $items['adminrole-update'] = [
     'description' => 'Update the administrator role permissions.',
     'callback' => 'drush_adminrole_update',
-    'drupal dependencies' => array('adminrole'),
-  );
+    'drupal dependencies' => ['adminrole'],
+  ];
   return $items;
 }
 
