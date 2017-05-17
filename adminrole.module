@@ -1,0 +1,107 @@
+<?php
+// $Id: adminrole.module,v 1.2.2.8.2.11 2010/08/14 17:59:20 davereid Exp $
+
+/**
+ * @file
+ * This module simply gives a designated role all permissions every time the
+ * modules page is submitted.
+ */
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\Role;
+use Drupal\user\RoleInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function adminrole_form_user_admin_settings_alter(&$form, FormStateInterface $form_state) {
+  // Administrative role option.
+  $form['admin_role'] = array(
+    '#type' => 'details',
+    '#title' => t('Administrator role'),
+    '#open' => TRUE,
+  );
+
+  // Do not allow users to set the anonymous or authenticated user roles as the administrator role.
+  $roles = user_role_names();
+
+  unset($roles[RoleInterface::ANONYMOUS_ID]);
+  unset($roles[RoleInterface::AUTHENTICATED_ID]);
+
+
+ $form['admin_role']['user_admin_role'] = array(
+     '#type' => 'select',
+     '#title' => t('Administrator role'),
+     '#default_value' => \Drupal::configFactory()->getEditable('adminrole.settings')->get('user_admin_role'),
+     '#options' => array(0 => t('Disabled')) + $roles,
+     '#description' => t('This role will be automatically assign new permissions whenever a module is enabled, field is added/updated or entity is aded/updated.'),
+   );
+
+  // Add submit handler to save rid configuration.
+  $form['#submit'][] = 'adminrole_user_admin_settings_submit';
+}
+
+/**
+ * Form submission handler for user_admin_settings().
+ *
+ * @see adminrole_form_user_admin_settings_alter()
+ */
+function adminrole_user_admin_settings_submit($form, FormStateInterface $form_state) {
+  \Drupal::configFactory()->getEditable('adminrole.settings')
+    ->set('user_admin_role', $form_state->getValue('user_admin_role'))
+    ->save();
+  adminrole_update_permissions();
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function adminrole_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if (in_array($form_id, array('system_modules', 'user_admin_permissions'))) {
+    $form['#submit'][] = 'adminrole_update_permissions';
+  }
+}
+
+/**
+ * Respond to fields/entities being created, updated, deleted   - NOTE - this is the wrong code fore this!!
+ * Implements hook_ENTITY_TYPE_update() for node_type entities.
+ */
+function adminrole_node_type_update() {
+  adminrole_update_permissions();
+}
+
+/**
+ * Implements hook_field_storage_config_update().
+ */
+function adminrole_field_storage_config_update() {
+  adminrole_update_permissions();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update().
+ */
+function adminrole_field_storage_config_delete() {
+  adminrole_update_permissions();
+}
+
+/**
+ * Update the admin role with all current available permissions.
+ */
+function adminrole_update_permissions() {
+  static $messaged;
+  if ($rid = \Drupal::configFactory()->getEditable('adminrole.settings')->get('user_admin_role')) {
+    $permissions = \Drupal::service('user.permissions')->getPermissions();
+    $permission_keys = [];
+    foreach($permissions as $permission_name => $data) {
+      $permission_keys[$permission_name] = 1;
+    }
+
+    user_role_change_permissions($rid, $permission_keys);
+
+    $role = Role::load($rid);
+    $label = $role->label();
+    if (!$messaged) {
+      drupal_set_message(t("The <em>@role</em> role has been reset for all permissions.", array("@role" => $label)));
+      $messaged = TRUE;
+    }
+  }
+}

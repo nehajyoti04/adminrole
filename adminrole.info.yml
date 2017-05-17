@@ -1,0 +1,5 @@
+name: 'Admin Role'
+description: 'Automatically assign all permissions to an admin role.'
+package: Administration
+core: 8.x
+type: module

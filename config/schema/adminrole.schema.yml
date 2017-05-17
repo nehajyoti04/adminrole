@@ -1,0 +1,6 @@
+adminrole.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    user_admin_role:
+      type: string
